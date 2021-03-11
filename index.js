@@ -24,7 +24,20 @@ const Location=require('./models/location.js')
 
 const URL=process.env.URL||'https://dedriver.org/gtfs-rt/vehiclePositions.pb';
 debug('URL: '+URL)
-      
+
+const UUID_PREFIX=process.env.UUID_PREFIX||'deu-dede';
+debug('UUID_PREFIX: '+UUID_PREFIX)
+
+const REQUEST_CYCLE=parseInt(process.env.REQUEST_CYCLE, 10)||30000;
+debug('REQUEST_CYCLE: '+REQUEST_CYCLE)
+
+const TS_FACTOR=parseInt(process.env.TS_FACTOR, 10)||30000;
+debug('TS_FACTOR: '+TS_FACTOR)
+
+//TODO vehicle code 0 is not supported by js library dotenv!!!
+const VEHICLE=parseInt(process.env.VEHICLE, 10)||0;
+debug('VEHICLE: '+VEHICLE)
+
 const requestSettings = {
     method: 'GET',
     url:URL,
@@ -39,39 +52,77 @@ db.on('error', err => {
     console.error('connection error:', err)
 })
 
-const ERROR=false;
+var ERROR=false;
+
+//buffer unknown vehicles in array to insert later alltogether
+var saveArray=[]
 
 run().catch(err => {
     debug('...run error')
-    console.log(err)
+    debug(err)
     ERROR=true;
 });
 
 async function run() {
-    debug('run...')
 
-    request(requestSettings, function (error, response, body) {
-	if (!error && response.statusCode == 200) {
-	    debug('response 200');
+    //update database with unknown documents
+    if(saveArray.length>0){
 
-            var feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(body);
-	    debug('feed decoded')
+	Location.insertMany(saveArray, function(err) {
+		if(err){
+		    debug('insertMany: err: '+err)
+		    return
+		}else{
+		    saveArray=[]
+		}
+	    });
+    }else{
 
-	    //create new Location instance based on request
-	    let loc = new Location()
-	    initLocation(loc)
-	    //debug('new loc: %s',loc);
-	
-            feed.entity.forEach(function(entity) {
+	//request document updates
+	request(requestSettings, function (error, response, body) {
+	    if (!error && response.statusCode == 200) {
+		var feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(body);
+
+		//search response for known documents and update
+		feed.entity.forEach(function(entity) {
+		//create new model instance == location document
+		let loc = new Location()
+
 		if (entity.trip_update) {
 		    debug('trip update')
 		}else if(entity.vehicle){
 
+		    //create model instance (document) based on req body
 		    createLocation(entity,loc)
-		    //debug('new loc: %s',loc);
 
-		    //check database for existing locations
-		    findLocation(loc);
+		    //debug('new loc: %s',loc);
+		    const filter={uuid:loc.uuid}
+		    const update={
+			uuid:loc.uuid,
+			lat:loc.lat,
+			lon:loc.lon,
+			ts:loc.ts,
+			alias:loc.alias,
+			vehicle:loc.vehicle,
+			label:loc.label,
+			licensePlate:loc.licensePlate
+		    }
+
+		    Location.findOneAndUpdate(
+			filter,
+			update,
+			{returnOriginal:false},
+			function (err, docs)
+			{
+			    if (err){
+				debug(err)
+			    }
+			    else{
+				if(!docs){
+				    saveArray.push(loc)
+				}
+			    }
+			});
 
 		}else if(entity.alert){
 		    debug('alert')
@@ -79,8 +130,9 @@ async function run() {
                     debug('entity unknown')
 		}
             });
+
 	}else{
-	    debug('error or unsatisfactory status code')
+	    debug('error or unsatisfactory status code: '+response.statusCode)
 	}
 
 	//stop interval if error occurs
@@ -88,124 +140,67 @@ async function run() {
             debug('run exiting'); 
             clearInterval(this); 
         }
+
     });
-}
 
+    }
+    
+}
 //call callback function every interval
-setInterval(run, 10000);
-
-
-function initLocation(loc){
-    //debug('initLocation...')
-
-    	loc.uuid=''
-	loc.lat=0;
-	loc.lon=0;
-	loc.ts=0;
-	loc.alias=''
-	loc.vehicle=''
-	loc.label=''
-	loc.licensePlate=''
-
-
-    //debug('initLocation done.')
-}
+setInterval(run, REQUEST_CYCLE);
 
 function createLocation(entity,loc){
-    //debug('createLocation...')
-
-                debug('vehicle position')
-
-		const vehicle=entity.vehicle
-		if(vehicle.vehicle){
-		    debug('vehicle')
-		    const vehDes=vehicle.vehicle
-		    if(vehDes.id){
-			debug('id: %s',vehDes.id)
-			loc.uuid=vehDes.id
-		    }else{
-			debug('id unavailable')
-		    }
-		    if(vehDes.label){
-			debug('label: %s',vehDes.label)
-			loc.label=vehDes.label
-		    }else{
-			debug('label unavailable')
-		    }
-		    if(vehDes.licensePlate){
-			debug('licensePlate: %s',vehDes.licensePlate)
-			loc.licensePlate=vehDes.licensePlate
-		    }else{
-			debug('licensePlate unavailable')
-		    }
-		}else{
-		    debug('vehicle unavailable')
-		}
-		if(vehicle.position){
-		    debug('position')
-		    const position=vehicle.position
-		    if(position.latitude){
-			const latitude=position.latitude
-			debug('latitude: %s',latitude)
-			loc.lat=latitude
-		    }else{
-			debug('latitude unavailable')
-		    }
-		    if(position.longitude){
-			const longitude=position.longitude
-			debug('longitude: %s',longitude)
-			loc.lon=longitude
-		    }else{
-			debug('longitude unavailable')
-		    }
-		}else{
-		    debug('position unavailable')
-		}
-		if(vehicle.timestamp){
-		    debug('timestamp: %s',vehicle.timestamp)
-		    loc.ts=vehicle.timestamp
-		}else{
-		    debug('timestamp unavailable')
-		}
-
-    
-    //debug('createLocation done.')
-}
-
-function updateLocation(locA,locB){
-    locA.lat=locB.lat
-    locA.lon=locB.lon
-    locA.ts=locB.ts
-    locA.alias=locB.alias
-    locA.vehicle=locB.vehicle
-    locA.label=locB.label
-    locA.licensePlate=locB.licensePlate
-}    
-
-function saveLocation(loc){
-    loc.save(function(err, location) {
-        if(err){
-	    debug('save error:'+err)
-	}
-    });
-}
-
-function findLocation(locNew){
-    debug('find location for uuid %s',locNew.uuid);
-
-    //check database for existing locations
-    Location.findOne({uuid:locNew.uuid}, function(err, location){
-	if(err){
-	    debug('find location error: '+err)
-	}
-	else if(location){
-	    //update existing location
-	    updateLocation(location,locNew)
-	    saveLocation(location)
+    loc.vehicle=VEHICLE
+    const vehicle=entity.vehicle
+    if(vehicle.vehicle){
+	const vehDes=vehicle.vehicle
+	if(vehDes.id){
+	    debug('id: %s',vehDes.id)
+	    loc.uuid=UUID_PREFIX+vehDes.id
+	    debug('loc.uuid: %s',loc.uuid)
 	}else{
-	    //save new location
-	    saveLocation(locNew)
+	    debug('id unavailable')
 	}
-    });
+	if(vehDes.label){
+	    debug('label: %s',vehDes.label)
+	    loc.label=vehDes.label
+	    loc.alias=vehDes.label
+	}else{
+	    debug('label unavailable')
+	}
+	if(vehDes.licensePlate){
+	    debug('licensePlate: %s',vehDes.licensePlate)
+	    loc.licensePlate=vehDes.licensePlate
+	}else{
+	    debug('licensePlate unavailable')
+	}
+    }else{
+	debug('vehicle unavailable')
+    }
+    if(vehicle.position){
+	const position=vehicle.position
+	if(position.latitude){
+	    const latitude=position.latitude
+	    debug('latitude: %s',latitude)
+	    loc.lat=latitude
+	}else{
+	    debug('latitude unavailable')
+	}
+	if(position.longitude){
+	    const longitude=position.longitude
+	    debug('longitude: %s',longitude)
+	    loc.lon=longitude
+	}else{
+	    debug('longitude unavailable')
+	}
+    }else{
+	debug('position unavailable')
+    }
+    if(vehicle.timestamp){
+	debug('timestamp: %s',vehicle.timestamp)
+	loc.ts=vehicle.timestamp*TS_FACTOR
+    }else{
+	debug('timestamp unavailable')
+    }
 }
 

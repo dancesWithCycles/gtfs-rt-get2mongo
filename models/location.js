@@ -31,6 +31,6 @@ const locationSchema=new Schema({
 })
 
 /*convert Schema into a Model*/
-var Location=mongoose.model('Location',locationSchema)
+const Location=mongoose.model('Location',locationSchema)
 module.exports=Location
 
