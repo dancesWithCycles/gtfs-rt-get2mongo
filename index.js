@@ -38,10 +38,16 @@ debug('TS_FACTOR: '+TS_FACTOR)
 const VEHICLE=parseInt(process.env.VEHICLE, 10)||0;
 debug('VEHICLE: '+VEHICLE)
 
+const TOKEN=process.env.TOKEN||'TOKEN';
+debug('TOKEN: '+TOKEN)
+
 const requestSettings = {
     method: 'GET',
     url:URL,
-    encoding: null
+    encoding: null,
+    headers:{
+	'authorization':`${TOKEN}`
+    }
 };
 
 const db=mongoose.connection
@@ -134,17 +140,14 @@ async function run() {
 	}else{
 	    debug('error or unsatisfactory status code: '+response.statusCode)
 	}
-
-	//stop interval if error occurs
-        if (ERROR) { 
-            debug('run exiting'); 
-            clearInterval(this); 
-        }
-
     });
-
     }
-    
+
+    //stop interval if error occurs
+    if (ERROR) {
+        debug('run exiting');
+	clearInterval(this);
+    }
 }
 //call callback function every interval
 setInterval(run, REQUEST_CYCLE);
