@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 const GtfsRealtimeBindings = require('gtfs-realtime-bindings');
 require('dotenv').config();
-const request = require('request');
+const axios = require('axios');
 const debug=require('debug')('gtfs-rt-get2mongo')
 const mongoose = require('./mongooseConnect')
 const Location=require('./models/location.js')
@@ -37,6 +37,9 @@ debug('TS_FACTOR: '+TS_FACTOR)
 //TODO vehicle code 0 is not supported by js library dotenv!!!
 const VEHICLE=parseInt(process.env.VEHICLE, 10)||0;
 debug('VEHICLE: '+VEHICLE)
+
+const TOKEN=process.env.TOKEN||'TOKEN';
+debug('TOKEN: '+TOKEN)
 
 const requestSettings = {
     method: 'GET',
@@ -78,6 +81,24 @@ async function run() {
 	    });
     }else{
 
+	//HTTP GET
+	let dataGet = await axios.get(
+	    URL,
+	    {
+		headers:{
+		    'accept':'application/octet-stream',
+		    'authorization':`${TOKEN}`
+		}
+	    }
+	).then(res => res.data);
+	debug('data received via GET');
+	debug('dataGet len: %s',dataGet.length)
+
+	const dataBuffered=Buffer.from(dataGet,'binary');
+	debug('dataBufferd len: %s',dataBuffered.length)
+
+	let feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(dataBuffered);
+/*
 	//request document updates
 	request(requestSettings, function (error, response, body) {
 	    if (!error && response.statusCode == 200) {
@@ -135,16 +156,14 @@ async function run() {
 	    debug('error or unsatisfactory status code: '+response.statusCode)
 	}
 
-	//stop interval if error occurs
-        if (ERROR) { 
-            debug('run exiting'); 
-            clearInterval(this); 
-        }
-
     });
-
+*/
     }
-    
+    //stop interval if error occurs
+    if (ERROR) {
+        debug('run exiting');
+	clearInterval(this);
+    }
 }
 //call callback function every interval
 setInterval(run, REQUEST_CYCLE);
