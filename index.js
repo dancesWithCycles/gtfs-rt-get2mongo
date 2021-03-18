@@ -94,10 +94,10 @@ async function run() {
 		//create new model instance == location document
 		let loc = new Location()
 
-		if (entity.trip_update) {
+		if (entity.tripUpdate) {
 		    debug('trip update')
 		}else if(entity.vehicle){
-
+		    debug('vehicle position')
 		    //create model instance (document) based on req body
 		    createLocation(entity,loc)
 
@@ -152,10 +152,46 @@ async function run() {
 //call callback function every interval
 setInterval(run, REQUEST_CYCLE);
 
+//parse Vehicle Position and update data base
 function createLocation(entity,loc){
     loc.vehicle=VEHICLE
     const vehicle=entity.vehicle
+    if(vehicle.trip){
+	debug('TripDescriptor available')
+	if(vehicle.trip.tripId){
+	    debug('trip_id:'+vehicle.trip.tripId)
+	}else{
+	    debug('trip_id unavailable')
+	}
+	if(vehicle.trip.routeId){
+	    debug('route_id:'+vehicle.trip.routeId)
+	}else{
+	    debug('route_id unavailable')
+	}
+	if(vehicle.trip.directionId){
+	    debug('direction_id:'+vehicle.trip.directionId)
+	}else{
+	    debug('direction_id unavailable')
+	}
+	if(vehicle.trip.startTime){
+	    debug('start_time:'+vehicle.trip.startTime)
+	}else{
+	    debug('start_time unavailable')
+	}
+	if(vehicle.trip.startDate){
+	    debug('start_date:'+vehicle.trip.startDate)
+	}else{
+	    debug('start_date unavailable')
+	}
+	if(vehicle.trip.scheduleRelationschip){
+	    debug('schedule_relationship:'+vehicle.trip.scheduleRelationship)
+	}else{
+	    debug('schedule_relationship unavailable')
+	}
+    }
+
     if(vehicle.vehicle){
+	debug('VehicleDescriptor available')
 	const vehDes=vehicle.vehicle
 	if(vehDes.id){
 	    debug('id: %s',vehDes.id)
