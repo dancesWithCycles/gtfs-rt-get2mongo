@@ -19,8 +19,8 @@ const GtfsRealtimeBindings = require('gtfs-realtime-bindings');
 require('dotenv').config();
 const request = require('request');
 const debug=require('debug')('gtfs-rt-get2mongo')
-const mongoose = require('./mongooseConnect')
-const Location=require('./models/location.js')
+const mongoose = require('./dede-mongo/connect')
+const Location=require('./dede-mongo/models/vehicle.js')
 
 const URL=process.env.URL||'https://dedriver.org/gtfs-rt/vehiclePositions.pb';
 debug('URL: '+URL)
@@ -160,33 +160,33 @@ function createLocation(entity,loc){
 	debug('TripDescriptor available')
 	if(vehicle.trip.tripId){
 	    debug('trip_id:'+vehicle.trip.tripId)
+	    loc.tripId=vehicle.trip.tripId
 	}else{
 	    debug('trip_id unavailable')
 	}
 	if(vehicle.trip.routeId){
 	    debug('route_id:'+vehicle.trip.routeId)
+	    loc.routeId=vehicle.trip.routeId
 	}else{
 	    debug('route_id unavailable')
 	}
 	if(vehicle.trip.directionId){
 	    debug('direction_id:'+vehicle.trip.directionId)
+	    loc.directionId=vehicle.trip.directionId
 	}else{
 	    debug('direction_id unavailable')
 	}
 	if(vehicle.trip.startTime){
 	    debug('start_time:'+vehicle.trip.startTime)
+	    loc.startTime=vehicle.trip.startTime
 	}else{
 	    debug('start_time unavailable')
 	}
 	if(vehicle.trip.startDate){
 	    debug('start_date:'+vehicle.trip.startDate)
+	    loc.startDate=vehicle.trip.startDate
 	}else{
 	    debug('start_date unavailable')
-	}
-	if(vehicle.trip.scheduleRelationschip){
-	    debug('schedule_relationship:'+vehicle.trip.scheduleRelationship)
-	}else{
-	    debug('schedule_relationship unavailable')
 	}
     }
 
