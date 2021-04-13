@@ -1,0 +1,13 @@
+MONGOOSE_DEBUGGING=true
+MONGOOSE_DB=gtfs-rt-get2mongo
+MONGOOSE_PORT=27017
+MONGOOSE_HOST=127.0.0.1
+MONGOOSE_UP=
+MONGOOSE_TYPE=mongodb://
+NODE_ENV=development
+URL=http://gtfsr.vbn.de/gtfsr_connect.bin
+REQUEST_CYCLE=10000
+UUID_PREFIX=deu-vbn
+TS_FACTOR=1
+VEHICLE=0
+
