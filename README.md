@@ -1,30 +1,55 @@
-# gtfs-rt-get2mongo
-translate a GTFS-Realtime message feed from HTTP GET request to a mongo db
+# Gtfs-rt-get2mongo
 
-## Overview
-This repository provides a command line interface service for Linux based operating system. As a back end service it interacts between GTFS-Realtime message feed providers and the Dede database.
+translate a GTFS-Realtime feed from HTTP GET request to MongoDb
 
-## Setup for development environment
-Checkout the git repository.
+## Table of Contents
+0. [General](#General)
+1. [Quick Start Guide](#Quick-Start-Guide)
+2. [Setup](doc/setup.md)
+
+# General
+
+This repository provides a command line interface service for Linux based operating systems. As a back end service it interacts between GTFS-Realtime feed providers and the Designated Driver (Dede) [initiative](https://dedriver.org).
+
+# Quick Start Guide
+
+## Preparation
+
+* checkout the git repository\
 ```
 git clone https://github.com/dancesWithCycles/gtfs-rt-get2mongo.git
 ```
-Change into the project directory.
+
+* change into the project directory\
 ```
 cd gtfs-rt-get2mongo
 ```
-Checkout git repository ```dede-mongo``` into project directory to interact with Dede database.
+
+* checkout git repository ```dede-mongo``` into project directory to interact with Dede database\
 ```
 git clone https://github.com/dancesWithCycles/dede-mongo.git
 ```
-Run the following command in your favorite GNU/Linux shell to install dependenies.
+
+* run the following command in your favorite GNU/Linux shell to install dependenies\
 ```
 npm i
 ```
-Run the following command in your favorite GNU/Linux shell if you fancy log messages for debugging.
+
+## Development setup
+
+* run the following command in your favorite GNU/Linux shell if you fancy log messages for debugging\
 ```
 export DEBUG=gtfs-rt-get2mongo,mongoose,$DEBUG
 ```
-Run the following command in your favorite GNU/Linux shell to start the service.
+
+* run the following command in your favorite GNU/Linux shell to start the service\
 ```
 npm run dev
+```
+
+## Production deployment
+
+* run the following instrction to start the service for production mode.
+```
+npm run start
+```
