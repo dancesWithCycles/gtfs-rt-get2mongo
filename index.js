@@ -22,7 +22,7 @@ const debug=require('debug')('gtfs-rt-get2mongo')
 const mongoose = require('./dede-mongo/connect')
 const Location=require('./dede-mongo/models/vehicle.js')
 
-const URL=process.env.URL||'https://dedriver.org/gtfs-rt/vehiclePositions.pb';
+const URL=process.env.URL||'TODO: Adjust URL according to use case!';
 debug('URL: '+URL)
 
 const UUID_PREFIX=process.env.UUID_PREFIX||'deu-dede';
